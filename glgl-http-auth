@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+# glglHttpAuth - HTTP Basic Authentication wrapper for GitLab 2.0 + gitolite
+# Copyright (c) 2012 Nobuo OKAZAKI
+
+### --- Modify for your environment --- ###
+GITLAB_BASEURL = "http://gitlab.foo.com"          # GitLab base URL
+GITLAB_DB = "/home/git/gitlabhq/db/production.sqlite3"  # GitLab database file
+GITOLITE_ENV = {
+    "GIT_PROJECT_ROOT"      : "/home/git/repositories", # gitolite repository path
+    "GITOLITE_HTTP_HOME"    : "/home/git",              # gitolite home
+    "GIT_HTTP_BACKEND"      : "/usr/libexec/git-core/git-http-backend", # git smart http cgi
+    "GIT_HTTP_EXPORT_ALL"   : "TRUE",                   # DO NOT MODIFY
+}
+### ----------------------------------- ###
+
+import os, sys
+import urllib, urllib2, cookielib
+from xml.dom.minidom import parse
+
+def check_password(environ, user, password):
+    return auth_gitlab(GITLAB_BASEURL, user, password)
+
+def auth_gitlab(baseurl, email, password):
+    cookie_handler = urllib2.HTTPCookieProcessor(cookielib.CookieJar())
+    opener = urllib2.build_opener(cookie_handler)
+    res = opener.open("%s/users/sign_in" % baseurl)
+    dom = parse(res)
+    form = {
+        "commit": "Sign in",
+        "user[email]": email,
+        "user[password]": password,
+        "user[remember_me]": 0,
+        "utf8": "&#x2713;",
+    }
+    for el in dom.getElementsByTagName("input"):
+        if el.getAttribute("name") == "authenticity_token":
+            form["authenticity_token"] = el.getAttribute("value")
+            break
+    res = opener.open("%s/users/sign_in" % baseurl, urllib.urlencode(form))
+    try: dom = parse(res)
+    except: return False
+    for el in dom.getElementsByTagName("input"):
+        if el.getAttribute("name") == "user[email]": return False
+    form = {"_method":"delete", "authenticity_token":form["authenticity_token"]}
+    f = opener.open("%s/users/sign_out" % baseurl, urllib.urlencode(form))
+    return True
+
+if __name__ == "__main__":
+    import sqlite3, subprocess
+    conn = sqlite3.connect(GITLAB_DB)
+    cur = conn.cursor()
+    cur.execute("SELECT identifier FROM users LEFT JOIN keys ON users.id = user_id WHERE email = ? ORDER BY keys.id LIMIT 1", (os.environ["REMOTE_USER"],));
+    sys.stderr.write("email:%s, " % os.environ["REMOTE_USER"])
+    os.environ["REMOTE_USER"] = cur.fetchone()[0]
+    sys.stderr.write("gitolite:%s\n" % os.environ["REMOTE_USER"])
+    for k in GITOLITE_ENV.keys(): os.environ[k] = GITOLITE_ENV[k]
+    subprocess.check_call("%s/bin/gl-auth-command" % GITOLITE_ENV["GITOLITE_HTTP_HOME"])
+
