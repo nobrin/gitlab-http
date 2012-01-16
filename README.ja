@@ -1,14 +1,12 @@
 
 GitLab-http 2012-01-16
 ---
-Wrapper for accessing GitLab-gitolite over HTTP with GitLab accounts.
+GitLabのリポジトリにHTTPアクセスするためのラッパー
 
-This tiny script "glgl(say 'guruguru')-http-auth" provides a slightly convinient access way to GitLab.
-(i.e. git clone http://gitlab.foo.com/git/my-project.git with GitLab accounts).
-GitLab(http://gitlabhq.com/) is a web interface which has github-like interface.
-Gitolite is so convinient for SSH, and is capable for Smart HTTP. In case of Smart HTTP, gitolite needs apache authentication mechanism, which does not satisfy convinient use for GitLab.
-This glgl-http-auth bridges GitLab and gitolite with HTTP authentication and access. This is so simple script.
-With this script, you can access the repository of your GitLab with your GitLab account.
+glgl(ぐるぐる)-http-authはGitLabのリポジトリにGitLabのアカウントを使ってHTTPでアクセスするためのスクリプトです。
+これを使うことで、例えばgit clone http://gitlab.foo.com/git/my-project.gitというような形式でGitLabのアカウントでリポジトリにアクセスできます。
+gitoliteはSSHおよびSmart HTTPに対応していますが、Smart HTTPで使用するためにはhttpサーバの認証を用いる必要があるため、GitLabとの連携する場合は少し不便です。
+その問題を解消するためにglgl-http-authが認証およびラッパーとして動作します。
 
 
 Requirements
@@ -57,3 +55,4 @@ This script provides authentication with GitLab web interface and wraps gl-auth-
 Thanks for using the script.
 
 Nobuo OKAZAKI
+http://github.com/nobrin/gitlab-http

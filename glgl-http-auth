@@ -3,13 +3,13 @@
 # Copyright (c) 2012 Nobuo OKAZAKI
 
 ### --- Modify for your environment --- ###
-GITLAB_BASEURL = "http://gitlab.foo.com"          # GitLab base URL
-GITLAB_DB = "/home/git/gitlabhq/db/production.sqlite3"  # GitLab database file
+GITLAB_BASEURL = "http://gitlab.foo.com"                # set GitLab base URL
+GITLAB_DB = "/home/git/gitlabhq/db/production.sqlite3"  # set GitLab database file
 GITOLITE_ENV = {
-    "GIT_PROJECT_ROOT"      : "/home/git/repositories", # gitolite repository path
-    "GITOLITE_HTTP_HOME"    : "/home/git",              # gitolite home
+    "GIT_PROJECT_ROOT"      : "/home/git/repositories", # repository path
+    "GITOLITE_HTTP_HOME"    : "/home/git",              # gitolite home contains gitolite's bin scripts
     "GIT_HTTP_BACKEND"      : "/usr/libexec/git-core/git-http-backend", # git smart http cgi
-    "GIT_HTTP_EXPORT_ALL"   : "TRUE",                   # DO NOT MODIFY
+    "GIT_HTTP_EXPORT_ALL"   : "TRUE",                   # NEED NOT MODIFY
 }
 ### ----------------------------------- ###
 
@@ -18,11 +18,18 @@ import urllib, urllib2, cookielib
 from xml.dom.minidom import parse
 
 def check_password(environ, user, password):
+    """handler for WSGIAuthUserScript"""
     return auth_gitlab(GITLAB_BASEURL, user, password)
 
 def auth_gitlab(baseurl, email, password):
+    """authentication with GitLab Web Interface
+    There may be more efficient way, but I have any idea, so I have never used Rails.
+    """
+    # create CookieJar
     cookie_handler = urllib2.HTTPCookieProcessor(cookielib.CookieJar())
     opener = urllib2.build_opener(cookie_handler)
+
+    # open the GitLab login web page and parse
     res = opener.open("%s/users/sign_in" % baseurl)
     dom = parse(res)
     form = {
@@ -36,15 +43,20 @@ def auth_gitlab(baseurl, email, password):
         if el.getAttribute("name") == "authenticity_token":
             form["authenticity_token"] = el.getAttribute("value")
             break
+
+    # send login information to GitLab and check result
     res = opener.open("%s/users/sign_in" % baseurl, urllib.urlencode(form))
     try: dom = parse(res)
     except: return False
     for el in dom.getElementsByTagName("input"):
         if el.getAttribute("name") == "user[email]": return False
     form = {"_method":"delete", "authenticity_token":form["authenticity_token"]}
+
+    # logout if login was success
     f = opener.open("%s/users/sign_out" % baseurl, urllib.urlencode(form))
     return True
 
+# wrapper for gl-auth-command of gitolite
 if __name__ == "__main__":
     import sqlite3, subprocess
     conn = sqlite3.connect(GITLAB_DB)
@@ -56,3 +68,6 @@ if __name__ == "__main__":
     for k in GITOLITE_ENV.keys(): os.environ[k] = GITOLITE_ENV[k]
     subprocess.check_call("%s/bin/gl-auth-command" % GITOLITE_ENV["GITOLITE_HTTP_HOME"])
 
+# History
+# * Sun Jan 15 2012 Nobuo OKAZAKI
+# - initial script
