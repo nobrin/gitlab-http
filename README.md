@@ -22,7 +22,7 @@ GitLab-http is written in WSGI application.  Requires web server and mod_wsgi.
 
 - Python 2.5+
 - apache 2.2.x
-- GitLab 2.0
+- GitLab 2.0/2.1
 - gitolite
 - mod_wsgi
 
@@ -38,7 +38,7 @@ Installation
         # cp /path/to/glgl-http-auth .
         # chmod +x glgl-http-auth
 
-   after that, modify the head of glgl-http-auth for your environment.
+    after that, modify the head of glgl-http-auth for your environment.
 3. edit apache configuration
 
 
@@ -60,7 +60,7 @@ Implementation
 This script provides authentication with GitLab web interface and wraps gl-auth-command of gitolite.
 
 1. For hooking the authentication process of apache, this used mod_wsgi.
-2. The handler for WSGIAuthUserScript attempts sign-in on GitLab.
+2. The handler for WSGIAuthUserScript attempts sign-in on GitLab. WSGIAuthUserScript hooks user authentication and call check_password() in the specified script.
 3. If success, glgl-http-auth translate GitLab's email to identifier in gitolite using GitLab **production.sqlite3** DB directly.
 4. After that, the script passes identifier in gitolite to `gl-auth-command`.
 
