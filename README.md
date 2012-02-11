@@ -25,6 +25,7 @@ GitLab-http is written in WSGI application.  Requires web server and mod_wsgi.
 - GitLab 2.0/2.1
 - gitolite
 - mod_wsgi
+- py-bcrypt 0.2 -- http://pypi.python.org/pypi/py-bcrypt/
 
 
 Installation
